@@ -1,6 +1,6 @@
-# bitedb benchmark
+# Larkbase benchmark
 
-Measures the end-to-end performance of bitedb against a real Feishu/Lark tenant,
+Measures the end-to-end performance of Larkbase against a real Feishu/Lark tenant,
 or against the in-memory fake API used by the test suite.
 
 ## Run against Feishu
@@ -20,7 +20,7 @@ npm run bench:mock
 ```
 
 The mock has no network latency. It is useful for validating the benchmark and
-for measuring bitedb's local overhead (codec, batching, merge), not platform
+for measuring Larkbase's local overhead (codec, batching, merge), not platform
 performance.
 
 ## What it does
@@ -50,10 +50,10 @@ npm run bench -- --help
 | `--sequential N` | 20 | documents inserted one at a time |
 | `--read-ops N` | 60 | operations per read/update scenario |
 | `--concurrency N` | 8 | concurrent in-flight operations |
-| `--qps N` | 18 | bitedb's bitable token-bucket rate |
+| `--qps N` | 18 | Larkbase's bitable token-bucket rate |
 | `--batch-size N` | 500 | `maxBatchSize` |
 | `--batch-window N` | 50 | `batchWindowMs` |
-| `--database NAME` | `bitedb_perf` | logical database name |
+| `--database NAME` | `larkbase_perf` | logical database name |
 | `--table NAME` | `bench` | logical table name |
 | `--fresh` | off | unique database name (cold provisioning) |
 | `--keep-data` | off | keep rows and print the `run` id |

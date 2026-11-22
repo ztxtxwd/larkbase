@@ -29,7 +29,7 @@ export interface CodecContext {
   logger?: Logger
 }
 
-const MARKER_LIKE = /^\{"\$bitedb_(blob|json)":/
+const MARKER_LIKE = /^\{"\$(?:larkbase|bitedb)_(blob|json)":/
 
 /**
  * Bitable returns text fields as plain strings from the record-get endpoint
@@ -220,7 +220,7 @@ export async function decodeRecord(
       } else {
         if (decoded === undefined && raw !== undefined && raw !== null) {
           ctx.logger?.warn?.(
-            `[bitedb] record ${recordId} has an unsupported _id value; falling back to the record id`,
+            `[larkbase] record ${recordId} has an unsupported _id value; falling back to the record id`,
           )
         }
         setOwn(out, '_id', recordId)

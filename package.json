@@ -1,15 +1,15 @@
 {
-  "name": "bitedb",
-  "version": "0.2.0",
-  "description": "A headless, zero-provisioning serverless NoSQL database engine built on Feishu/Lark Bitable",
+  "name": "larkbase",
+  "version": "0.3.0",
+  "description": "Larkbase: a headless, zero-provisioning serverless NoSQL database engine built on Feishu/Lark Bitable",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ztxtxwd/bitedb.git"
+    "url": "git+https://github.com/ztxtxwd/larkbase.git"
   },
-  "homepage": "https://github.com/ztxtxwd/bitedb#readme",
+  "homepage": "https://github.com/ztxtxwd/larkbase#readme",
   "bugs": {
-    "url": "https://github.com/ztxtxwd/bitedb/issues"
+    "url": "https://github.com/ztxtxwd/larkbase/issues"
   },
   "type": "module",
   "main": "./dist/index.cjs",
@@ -46,6 +46,7 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "keywords": [
+    "larkbase",
     "feishu",
     "lark",
     "bitable",

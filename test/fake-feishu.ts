@@ -1,4 +1,4 @@
-/* An in-memory approximation of the Feishu Open Platform endpoints bitedb uses. */
+/* An in-memory approximation of the Feishu Open Platform endpoints larkbase uses. */
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 

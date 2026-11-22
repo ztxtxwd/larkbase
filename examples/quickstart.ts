@@ -2,14 +2,14 @@
  * Run with:
  *   FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx npx tsx examples/quickstart.ts
  */
-import { BlobRef, createClient } from 'bitedb'
+import { BlobRef, createClient } from 'larkbase'
 
 const db = createClient({
   appId: process.env.FEISHU_APP_ID!,
   appSecret: process.env.FEISHU_APP_SECRET!,
 })
 
-const database = db.useDatabase('bitedb_demo')
+const database = db.useDatabase('larkbase_demo')
 const users = database.defineTable('users', {
   name: 'text',
   email: 'text',
@@ -33,7 +33,7 @@ await orders.insertOne({
   status: 'paid',
   owner: owner._id,
   notes: { source: 'demo', tags: ['fresh'] },
-  attachments: Buffer.from('hello from bitedb'),
+  attachments: Buffer.from('hello from Larkbase'),
 })
 
 const top = await orders

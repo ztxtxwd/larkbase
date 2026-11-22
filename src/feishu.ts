@@ -1,4 +1,4 @@
-import { FeishuApiError, BiteDBError, ConfigError, isRetryableCode } from './errors.js'
+import { FeishuApiError, LarkbaseError, ConfigError, isRetryableCode } from './errors.js'
 import type { Logger } from './logger.js'
 import { TokenBucket, clamp, normalizeUrl, randomUUID, sleep } from './util.js'
 
@@ -128,7 +128,7 @@ const DEFAULT_DOMAIN = 'https://open.feishu.cn'
 const MAX_SIMPLE_UPLOAD = 20 * 1024 * 1024
 
 function isNetworkError(err: unknown): boolean {
-  if (err instanceof BiteDBError) return false
+  if (err instanceof LarkbaseError) return false
   if (err instanceof Error) {
     return (
       err.name === 'AbortError' ||
@@ -174,7 +174,7 @@ export class FeishuClient {
       throw new ConfigError('No fetch implementation available. Use Node.js >= 18 or pass `fetch` in config.')
     }
     this.logger = options.logger
-    this.userAgent = options.userAgent ?? 'bitedb/0.1.0'
+    this.userAgent = options.userAgent ?? 'larkbase/0.3.0'
     this.bitableBucket = new TokenBucket(Math.max(1, options.bitableQps))
     this.driveBucket = new TokenBucket(Math.max(1, options.driveQps))
     this.appId = options.appId
@@ -182,7 +182,7 @@ export class FeishuClient {
     this.accessTokenOption = options.accessToken
 
     if (!this.accessTokenOption && (!this.appId || !this.appSecret)) {
-      throw new ConfigError('bitedb requires `appId` + `appSecret`, or an `accessToken`/`accessToken` provider.')
+      throw new ConfigError('Larkbase requires `appId` + `appSecret`, or an `accessToken`/`accessToken` provider.')
     }
   }
 
@@ -243,7 +243,7 @@ export class FeishuClient {
           token: String(json.tenant_access_token),
           expiresAt: Date.now() + Math.max(60, expire - 60) * 1000,
         }
-        this.logger.debug?.('[bitedb] acquired tenant access token')
+        this.logger.debug?.('[larkbase] acquired tenant access token')
         return this.tokenCache.token
       } catch (err) {
         lastError = err
@@ -253,7 +253,7 @@ export class FeishuClient {
     }
     throw lastError instanceof Error
       ? lastError
-      : new BiteDBError('Failed to acquire a tenant access token', { cause: lastError })
+      : new LarkbaseError('Failed to acquire a tenant access token', { cause: lastError })
   }
 
   // ---------------------------------------------------------------------------
@@ -299,20 +299,20 @@ export class FeishuClient {
         }
 
         const json = await this.parseJson<T>(res, method, options.path)
-        this.logger.debug?.(`[bitedb] ${method} ${options.path} -> ${res.status}`)
+        this.logger.debug?.(`[larkbase] ${method} ${options.path} -> ${res.status}`)
         return json
       } catch (err) {
         lastError = err
         if (!this.shouldRetry(err, attempt, idempotent)) break
         const delay = this.retryDelay(err, attempt)
-        this.logger.warn?.(`[bitedb] retrying ${method} ${options.path} in ${delay}ms:`, (err as Error).message)
+        this.logger.warn?.(`[larkbase] retrying ${method} ${options.path} in ${delay}ms:`, (err as Error).message)
         await sleep(delay)
       }
     }
 
     throw lastError instanceof Error
       ? lastError
-      : new BiteDBError(`Feishu request failed: ${method} ${options.path}`, { cause: lastError })
+      : new LarkbaseError(`Feishu request failed: ${method} ${options.path}`, { cause: lastError })
   }
 
   private buildUrl(options: RequestOptions): string {
@@ -461,7 +461,7 @@ export class FeishuClient {
         body: form,
         category: 'drive',
       })
-      if (!data?.file_token) throw new BiteDBError('Feishu media upload returned no file_token')
+      if (!data?.file_token) throw new LarkbaseError('Feishu media upload returned no file_token')
       return { fileToken: data.file_token, fileName, size }
     }
 
@@ -492,14 +492,14 @@ export class FeishuClient {
       idempotent: false,
     })
     if (!prepared?.upload_id || !prepared.block_size || !prepared.block_num) {
-      throw new BiteDBError('Feishu chunked upload prepare returned an invalid strategy')
+      throw new LarkbaseError('Feishu chunked upload prepare returned an invalid strategy')
     }
 
     const uploadId = prepared.upload_id
     const blockSize = Number(prepared.block_size)
     const blockNum = Number(prepared.block_num)
     if (!Number.isFinite(blockSize) || !Number.isFinite(blockNum) || blockSize <= 0 || blockNum <= 0) {
-      throw new BiteDBError('Feishu chunked upload prepare returned an invalid strategy')
+      throw new LarkbaseError('Feishu chunked upload prepare returned an invalid strategy')
     }
     for (let seq = 0; seq < blockNum; seq++) {
       const start = seq * blockSize
@@ -525,7 +525,7 @@ export class FeishuClient {
       category: 'drive',
       idempotent: false,
     })
-    if (!finished?.file_token) throw new BiteDBError('Feishu chunked upload returned no file_token')
+    if (!finished?.file_token) throw new LarkbaseError('Feishu chunked upload returned no file_token')
     return { fileToken: finished.file_token, fileName, size: bytes.byteLength }
   }
 
@@ -535,10 +535,10 @@ export class FeishuClient {
     try {
       url = new URL(rawUrl)
     } catch {
-      throw new BiteDBError('Invalid media URL')
+      throw new LarkbaseError('Invalid media URL')
     }
     if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-      throw new BiteDBError('Unsupported media URL protocol')
+      throw new LarkbaseError('Unsupported media URL protocol')
     }
     await this.driveBucket.take()
     const res = await this.fetchImpl(url.toString(), {
@@ -625,7 +625,7 @@ export class FeishuClient {
         await sleep(this.backoffMs(attempt))
       }
     }
-    throw new BiteDBError(`Failed to download media ${fileToken}`)
+    throw new LarkbaseError(`Failed to download media ${fileToken}`)
   }
 
   // ---------------------------------------------------------------------------
@@ -664,7 +664,7 @@ export class FeishuClient {
       body: { table },
       idempotent: false,
     })
-    if (!data?.table_id) throw new BiteDBError('Feishu createTable returned no table_id')
+    if (!data?.table_id) throw new LarkbaseError('Feishu createTable returned no table_id')
     return { tableId: data.table_id, viewId: data.default_view_id, fieldIds: data.field_id_list ?? [] }
   }
 
@@ -714,7 +714,7 @@ export class FeishuClient {
       body: field,
       idempotent: true,
     })
-    if (!data?.field) throw new BiteDBError(`Feishu createField(${field.field_name}) returned no field`)
+    if (!data?.field) throw new LarkbaseError(`Feishu createField(${field.field_name}) returned no field`)
     return data.field
   }
 
@@ -735,7 +735,7 @@ export class FeishuClient {
       body: field,
       idempotent: true,
     })
-    if (!data?.field) throw new BiteDBError(`Feishu updateField(${fieldId}) returned no field`)
+    if (!data?.field) throw new LarkbaseError(`Feishu updateField(${fieldId}) returned no field`)
     return data.field
   }
 
@@ -825,7 +825,7 @@ export class FeishuClient {
       body: { fields },
       idempotent: Boolean(clientToken),
     })
-    if (!data?.record) throw new BiteDBError('Feishu createRecord returned no record')
+    if (!data?.record) throw new LarkbaseError('Feishu createRecord returned no record')
     return data.record
   }
 
@@ -841,7 +841,7 @@ export class FeishuClient {
       body: { fields },
       idempotent: true,
     })
-    if (!data?.record) throw new BiteDBError(`Feishu updateRecord(${recordId}) returned no record`)
+    if (!data?.record) throw new LarkbaseError(`Feishu updateRecord(${recordId}) returned no record`)
     return data.record
   }
 
@@ -865,7 +865,7 @@ export class FeishuClient {
       method: 'GET',
       path: `/open-apis/bitable/v1/apps/${encodeURIComponent(appToken)}/tables/${encodeURIComponent(tableId)}/records/${encodeURIComponent(recordId)}`,
     })
-    if (!data?.record) throw new BiteDBError(`Feishu getRecord(${recordId}) returned no record`)
+    if (!data?.record) throw new LarkbaseError(`Feishu getRecord(${recordId}) returned no record`)
     return data.record
   }
 

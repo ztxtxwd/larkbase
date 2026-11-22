@@ -4,10 +4,10 @@ import { resolveConfig, type ResolvedConfig } from './config.js'
 import { Database } from './database.js'
 import { FeishuClient } from './feishu.js'
 import { Logger } from './logger.js'
-import type { BiteDBConfig, DatabaseInfo } from './types.js'
+import type { LarkbaseConfig, DatabaseInfo } from './types.js'
 
 /**
- * bitedb entry point.
+ * Larkbase entry point.
  *
  * ```ts
  * const db = createClient({ appId, appSecret })
@@ -15,7 +15,7 @@ import type { BiteDBConfig, DatabaseInfo } from './types.js'
  * await orders.insertOne({ sku: 'A1', price: 100, count: 3 })
  * ```
  */
-export class BiteDB {
+export class Larkbase {
   readonly config: ResolvedConfig
   readonly logger: Logger
   private readonly client: FeishuClient
@@ -23,7 +23,7 @@ export class BiteDB {
   private readonly blobs: BlobManager
   private readonly databases = new Map<string, Database>()
 
-  constructor(config: BiteDBConfig) {
+  constructor(config: LarkbaseConfig) {
     this.config = resolveConfig(config)
     this.logger = new Logger(config.logger)
     this.client = new FeishuClient({
@@ -118,6 +118,6 @@ export class BiteDB {
   }
 }
 
-export function createClient(config: BiteDBConfig): BiteDB {
-  return new BiteDB(config)
+export function createClient(config: LarkbaseConfig): Larkbase {
+  return new Larkbase(config)
 }

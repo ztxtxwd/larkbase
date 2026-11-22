@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { after, before, test } from 'node:test'
-import { BlobRef, ConfigError, createClient, type BiteDB, type BiteDBConfig } from '../src/index.js'
+import { BlobRef, ConfigError, createClient, type Larkbase, type LarkbaseConfig } from '../src/index.js'
+import { blobKindFromName, parseJsonEnvelope, parseSpillMarker } from '../src/blob.js'
 import { FakeFeishu } from './fake-feishu.js'
 
 let fake: FakeFeishu
-const clients: BiteDB[] = []
+const clients: Larkbase[] = []
 
-function makeClient(overrides: Partial<BiteDBConfig> = {}): BiteDB {
+function makeClient(overrides: Partial<LarkbaseConfig> = {}): Larkbase {
   const client = createClient({
     appId: 'test-app',
     appSecret: 'test-secret',
@@ -57,8 +58,8 @@ test('zero provisioning: creates catalog, database and physical table', async ()
   assert.equal(read.count, 3)
   assert.equal(read.total, 300)
 
-  assert.ok([...fake.bases.values()].some((base) => base.name === '__bitedb_catalog__'))
-  assert.ok([...fake.bases.values()].some((base) => base.name === 'bitedb:zero_provision'))
+  assert.ok([...fake.bases.values()].some((base) => base.name === '__larkbase_catalog__'))
+  assert.ok([...fake.bases.values()].some((base) => base.name === 'larkbase:zero_provision'))
 
   const formulaCalls = fake.callsMatching('POST', '/fields').filter((call) => call.body?.field_name === 'total')
   assert.equal(formulaCalls.length, 1)
@@ -96,7 +97,7 @@ test('an unreadable _id falls back to the record id and logs a warning', async (
   const table = client.useDatabase('bad_ids').defineTable('items', { name: 'text' })
   const inserted = await table.insertOne({ name: 'x' })
 
-  const base = [...fake.bases.values()].find((entry) => entry.name === 'bitedb:bad_ids')!
+  const base = [...fake.bases.values()].find((entry) => entry.name === 'larkbase:bad_ids')!
   const physical = [...base.tables.values()].find((entry) => entry.name === 'items')!
   const record = [...physical.records.values()].find((entry) => entry.fields._id === inserted._id)!
   record.fields._id = { unexpected: true }
@@ -303,7 +304,7 @@ test('duplex links resolve logical ids and expose the reverse side', async () =>
   assert.equal(linked[0]!.title, 'Hello')
 
   // Catalog loss must not turn the reverse side back into raw record ids.
-  const recoveredClient = makeClient({ catalogName: '__bitedb_catalog_graph__' })
+  const recoveredClient = makeClient({ catalogName: '__larkbase_catalog_graph__' })
   const recoveredUsers = recoveredClient
     .useDatabase('graph')
     .defineTable('users', { name: 'text' })
@@ -362,7 +363,7 @@ test('adopts an existing Base and physical tables when the catalog is lost', asy
   await sourceTable.insertOne({ sku: 'x', qty: 2 })
 
   // Simulate total catalog loss by pointing a client at a brand-new catalog.
-  const second = makeClient({ catalogName: '__bitedb_catalog_lost__' })
+  const second = makeClient({ catalogName: '__larkbase_catalog_lost__' })
   const recovered = second.useDatabase('recoverable').defineTable('orders', {
     sku: 'text',
     qty: 'number',
@@ -384,7 +385,7 @@ test('long logical table names survive catalog-loss adoption', async () => {
   const source = first.useDatabase('longname').defineTable(tableName, { value: 'number' })
   await source.insertOne({ value: 7 })
 
-  const second = makeClient({ catalogName: '__bitedb_catalog_long__' })
+  const second = makeClient({ catalogName: '__larkbase_catalog_long__' })
   const recovered = second.useDatabase('longname').table(tableName)
   const rows = await recovered.find({}).toArray()
   assert.equal(rows.length, 1)
@@ -413,7 +414,7 @@ test('credential aliases and pre-acquired access tokens work', async () => {
   assert.equal(read[0]!.name, 'alias')
 
   assert.throws(
-    () => createClient({ domain: fake.url } as BiteDBConfig),
+    () => createClient({ domain: fake.url } as LarkbaseConfig),
     (err) => err instanceof ConfigError,
   )
 })
@@ -695,4 +696,61 @@ test('hitting the default limit is visible to a debug logger', async () => {
   assert.equal(page.documents.length, 100)
   assert.equal(page.hasMore, true)
   assert.ok(messages.some((message) => message.includes('default limit of 100')))
+})
+
+test('parses cell markers and blob names written by bitedb', () => {
+  const marker = parseSpillMarker(
+    '{"$bitedb_blob":{"v":1,"kind":"text","file_token":"box_legacy","name":"bitedb.v1.text.0123456789abcdef.old.txt","size":3}}',
+  )
+  assert.ok(marker)
+  assert.equal(marker.file_token, 'box_legacy')
+  assert.equal(blobKindFromName(marker.name), 'text')
+
+  assert.deepEqual(parseJsonEnvelope('{"$bitedb_json":{"from":"bitedb"}}'), {
+    found: true,
+    value: { from: 'bitedb' },
+  })
+  assert.equal(blobKindFromName('larkbase.v1.json.0123456789abcdef.json'), 'json')
+})
+
+test('adopts a catalog and database Base created by bitedb', async () => {
+  const legacy = await new FakeFeishu().start()
+  const client = createClient({
+    appId: 'test-app',
+    appSecret: 'test-secret',
+    domain: legacy.url,
+    batchWindowMs: 5,
+    catalogFlushMs: 0,
+  })
+  try {
+    legacy.bases.set('legacy_catalog', {
+      app_token: 'legacy_catalog',
+      name: '__bitedb_catalog__',
+      url: 'https://example.feishu.cn/base/legacy_catalog',
+      tables: new Map(),
+    })
+    legacy.bases.set('legacy_shop', {
+      app_token: 'legacy_shop',
+      name: 'bitedb:legacy_shop',
+      url: 'https://example.feishu.cn/base/legacy_shop',
+      tables: new Map(),
+    })
+
+    const table = client.useDatabase('legacy_shop').defineTable('items', { name: 'text' })
+    const inserted = await table.insertOne({ name: 'kept' })
+    assert.equal((await table.get(inserted._id))!.name, 'kept')
+
+    const names = [...legacy.bases.values()].map((base) => base.name)
+    assert.ok(names.includes('__bitedb_catalog__'))
+    assert.ok(names.includes('bitedb:legacy_shop'))
+    assert.ok(!names.includes('__larkbase_catalog__'))
+    assert.ok(!names.includes('larkbase:legacy_shop'))
+
+    const catalog = legacy.bases.get('legacy_catalog')!
+    assert.ok([...catalog.tables.values()].some((entry) => entry.name === 'databases'))
+    assert.ok([...catalog.tables.values()].some((entry) => entry.name === 'tables'))
+  } finally {
+    await client.close().catch(() => {})
+    await legacy.stop()
+  }
 })

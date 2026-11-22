@@ -1,5 +1,5 @@
 /**
- * bitedb performance benchmark.
+ * Larkbase performance benchmark.
  *
  * Real Feishu / Lark:
  *   FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx npx tsx bench/perf.ts
@@ -11,7 +11,7 @@
  */
 import { performance } from 'node:perf_hooks'
 import { writeFile } from 'node:fs/promises'
-import { createClient, FeishuApiError, type BiteDB } from '../src/index.js'
+import { createClient, FeishuApiError, type Larkbase } from '../src/index.js'
 import type { SchemaDefinition, WithId } from '../src/index.js'
 
 // ---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ const DEFAULTS: Options = {
   qps: undefined,
   batchSize: 500,
   batchWindowMs: 50,
-  database: 'bitedb_perf',
+  database: 'larkbase_perf',
   table: 'bench',
   fresh: false,
   keepData: false,
@@ -134,7 +134,7 @@ function parseOptions(argv: string[]): Options {
 }
 
 function printUsage(): void {
-  console.log(`bitedb performance benchmark
+  console.log(`Larkbase performance benchmark
 
 Usage:
   FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx npx tsx bench/perf.ts [options]
@@ -146,9 +146,9 @@ Options:
   --read-ops N        Operations per read/update scenario (default 60)
   --concurrency N     Concurrent in-flight operations (default 8)
   --qps N             Bitable request rate limit (default 18; unlimited in --mock)
-  --batch-size N      maxBatchSize passed to bitedb (default 500)
-  --batch-window N    batchWindowMs passed to bitedb (default 50)
-  --database NAME     Database name (default bitedb_perf)
+  --batch-size N      maxBatchSize passed to Larkbase (default 500)
+  --batch-window N    batchWindowMs passed to Larkbase (default 50)
+  --database NAME     Database name (default larkbase_perf)
   --table NAME        Table name (default bench)
   --fresh             Use a unique database name for a cold-start measurement
   --keep-data         Do not delete benchmark rows at the end
@@ -366,7 +366,7 @@ function printResults(
   const rule = '-'.repeat(header.length)
 
   console.log('')
-  console.log('bitedb performance benchmark')
+  console.log('Larkbase performance benchmark')
   console.log(rule)
   console.log(`domain      ${domain}`)
   console.log(`database    ${dbName}`)
@@ -475,7 +475,7 @@ async function main(): Promise<void> {
     ? `${opts.database}_${startedAt.toISOString().replace(/[-:T.Z]/g, '').slice(0, 14)}`
     : opts.database
 
-  let db: BiteDB | undefined
+  let db: Larkbase | undefined
   const results: ScenarioResult[] = []
   const bootstrap = { ms: 0, calls: 0 }
   let tableStats: unknown

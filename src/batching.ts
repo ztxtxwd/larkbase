@@ -1,4 +1,4 @@
-import { BiteDBError } from './errors.js'
+import { LarkbaseError } from './errors.js'
 
 interface Pending<TInput, TResult> {
   input: TInput
@@ -25,7 +25,7 @@ export class Batcher<TInput, TResult> {
   constructor(private readonly options: BatcherOptions<TInput, TResult>) {}
 
   add(key: string, input: TInput): Promise<TResult> {
-    if (this.closed) return Promise.reject(new BiteDBError('Batcher is closed'))
+    if (this.closed) return Promise.reject(new LarkbaseError('Batcher is closed'))
     return new Promise<TResult>((resolve, reject) => {
       let queue = this.queues.get(key)
       if (!queue) {
@@ -77,7 +77,7 @@ export class Batcher<TInput, TResult> {
         queue.map((item) => item.input),
       )
       if (results.length !== queue.length) {
-        throw new BiteDBError(
+        throw new LarkbaseError(
           `Batch flush expected ${queue.length} results but got ${results.length}`,
         )
       }

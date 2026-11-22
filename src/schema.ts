@@ -70,7 +70,7 @@ export function normalizeSchema(schema: SchemaDefinition | undefined, options: S
     kind: 'text',
     feishuType: 1,
     primary: true,
-    description: 'bitedb document id',
+    description: 'larkbase document id',
   })
   return fields
 }

@@ -1,4 +1,4 @@
-export class BiteDBError extends Error {
+export class LarkbaseError extends Error {
   readonly code?: string | number
   readonly cause?: unknown
 
@@ -11,16 +11,16 @@ export class BiteDBError extends Error {
   }
 }
 
-export class ConfigError extends BiteDBError {}
+export class ConfigError extends LarkbaseError {}
 
-export class ValidationError extends BiteDBError {}
+export class ValidationError extends LarkbaseError {}
 
-export class NotFoundError extends BiteDBError {}
+export class NotFoundError extends LarkbaseError {}
 
-export class UnsupportedError extends BiteDBError {}
+export class UnsupportedError extends LarkbaseError {}
 
 /** An error returned by the Feishu/Lark Open Platform. */
-export class FeishuApiError extends BiteDBError {
+export class FeishuApiError extends LarkbaseError {
   readonly status: number
   readonly apiCode: number
   readonly apiMsg: string

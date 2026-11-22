@@ -1,6 +1,6 @@
 {
   "startedAt": "2026-11-05T05:41:58.588Z",
-  "database": "bitedb_perf",
+  "database": "larkbase_perf",
   "table": "bench",
   "domain": "https://open.feishu.cn",
   "options": {
@@ -10,11 +10,11 @@
     "concurrency": 16,
     "batchSize": 500,
     "batchWindowMs": 50,
-    "database": "bitedb_perf",
+    "database": "larkbase_perf",
     "table": "bench",
     "fresh": false,
     "keepData": false,
-    "json": "/root/code/bitedb/bench/results.json",
+    "json": "/root/code/larkbase/bench/results.json",
     "mock": false,
     "help": false
   },

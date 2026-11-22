@@ -1,6 +1,15 @@
 import { ConfigError } from './errors.js'
-import type { BiteDBConfig, HydrateMode } from './types.js'
+import type { LarkbaseConfig, HydrateMode } from './types.js'
 import { clamp } from './util.js'
+
+/** Default name of the system catalog Base. */
+export const DEFAULT_CATALOG_NAME = '__larkbase_catalog__'
+/** Catalog name used by bitedb <= 0.2, still discovered when defaults apply. */
+export const LEGACY_CATALOG_NAME = '__bitedb_catalog__'
+/** Default prefix for auto-created database Base names. */
+export const DEFAULT_DATABASE_PREFIX = 'larkbase:'
+/** Database prefix used by bitedb <= 0.2, still adopted when defaults apply. */
+export const LEGACY_DATABASE_PREFIX = 'bitedb:'
 
 export interface ResolvedConfig {
   appId?: string
@@ -27,8 +36,8 @@ export interface ResolvedConfig {
   fetch?: typeof fetch
 }
 
-export function resolveConfig(config: BiteDBConfig): ResolvedConfig {
-  if (!config || typeof config !== 'object') throw new ConfigError('bitedb config object is required')
+export function resolveConfig(config: LarkbaseConfig): ResolvedConfig {
+  if (!config || typeof config !== 'object') throw new ConfigError('Larkbase config object is required')
   const appId = config.appId ?? config.clientId
   const appSecret = config.appSecret ?? config.clientSecret
   if (!config.accessToken && (!appId || !appSecret)) {
@@ -37,7 +46,7 @@ export function resolveConfig(config: BiteDBConfig): ResolvedConfig {
     )
   }
 
-  const catalogName = config.catalogName ?? '__bitedb_catalog__'
+  const catalogName = config.catalogName ?? DEFAULT_CATALOG_NAME
   if (!catalogName.trim()) throw new ConfigError('catalogName cannot be empty')
 
   const hydrate = config.hydrate ?? 'auto'
@@ -55,7 +64,7 @@ export function resolveConfig(config: BiteDBConfig): ResolvedConfig {
     folderToken: config.folderToken,
     catalogName,
     catalogBaseToken: config.catalogBaseToken,
-    databasePrefix: config.databasePrefix ?? 'bitedb:',
+    databasePrefix: config.databasePrefix ?? DEFAULT_DATABASE_PREFIX,
     batchWindowMs: clamp(Math.floor(config.batchWindowMs ?? 50), 0, 5000),
     maxBatchSize: clamp(Math.floor(config.maxBatchSize ?? 500), 1, 1000),
     maxRowsPerShard: clamp(Math.floor(config.maxRowsPerShard ?? 20000), 1, 20000),

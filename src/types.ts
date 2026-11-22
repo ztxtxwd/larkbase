@@ -1,12 +1,12 @@
 /**
- * Public types for bitedb.
+ * Public types for Larkbase.
  *
- * bitedb treats Feishu/Lark Bitable as a headless storage engine. Everything a
+ * Larkbase treats Feishu/Lark Bitable as a headless storage engine. Everything a
  * developer touches lives in this file: connection config, schemas, documents,
  * queries and blob handles.
  */
 
-/** Semantic field types understood by bitedb. */
+/** Semantic field types understood by Larkbase. */
 export type FieldType =
   | 'text'
   | 'number'
@@ -70,7 +70,7 @@ export interface FieldDefinition {
 
 export type SchemaDefinition = Record<string, SchemaFieldType | FieldDefinition>
 
-/** A plain document. bitedb adds a stable string `_id`. */
+/** A plain document. Larkbase adds a stable string `_id`. */
 export type Document = Record<string, any>
 
 export type WithId<T extends Document = Document> = T & { _id: string }
@@ -131,14 +131,14 @@ export interface UpdateOptions {
 /** How attachment payloads are materialised when reading. */
 export type HydrateMode = 'auto' | 'eager' | 'never'
 
-export interface BiteDBLogger {
+export interface LarkbaseLogger {
   debug?: (...args: any[]) => void
   info?: (...args: any[]) => void
   warn?: (...args: any[]) => void
   error?: (...args: any[]) => void
 }
 
-export interface BiteDBConfig {
+export interface LarkbaseConfig {
   /** Feishu/Lark app id. Required unless `accessToken` is provided. */
   appId?: string
   /** Feishu/Lark app secret. Required unless `accessToken` is provided. */
@@ -157,11 +157,20 @@ export interface BiteDBConfig {
   domain?: string
   /** Folder that owns created Bases. Defaults to the cloud-space root. */
   folderToken?: string
-  /** Name of the system catalog Base. Defaults to `__bitedb_catalog__`. */
+  /**
+   * Name of the system catalog Base. Defaults to `__larkbase_catalog__`.
+   * With the default, an existing `__bitedb_catalog__` Base is adopted.
+   */
   catalogName?: string
-  /** Pin the catalog Base token, skipping discovery. Also readable from BITEDB_CATALOG_BASE_TOKEN. */
+  /**
+   * Pin the catalog Base token, skipping discovery. Also readable from
+   * `LARKBASE_CATALOG_BASE_TOKEN` (legacy: `BITEDB_CATALOG_BASE_TOKEN`).
+   */
   catalogBaseToken?: string
-  /** Prefix for auto-created database Base names. Defaults to `bitedb:`. */
+  /**
+   * Prefix for auto-created database Base names. Defaults to `larkbase:`.
+   * With the default, an existing `bitedb:<name>` Base is adopted.
+   */
   databasePrefix?: string
 
   /** Coalescing window for writes, in ms. Defaults to 50. */
@@ -188,7 +197,7 @@ export interface BiteDBConfig {
   driveQps?: number
 
   /** Optional logger. */
-  logger?: BiteDBLogger
+  logger?: LarkbaseLogger
   /** How often dirty catalog row counts are flushed, in ms. Defaults to 1000. */
   catalogFlushMs?: number
   /** Custom fetch implementation (testing, proxies, edge runtimes). */

@@ -7,7 +7,7 @@ import {
   type LinkResolver,
 } from './codec.js'
 import type { Database } from './database.js'
-import { BiteDBError, NotFoundError, UnsupportedError, ValidationError } from './errors.js'
+import { LarkbaseError, NotFoundError, UnsupportedError, ValidationError } from './errors.js'
 import type { FeishuFieldInfo, FeishuRecordInfo } from './feishu.js'
 import type { StoredField, TableMeta } from './meta.js'
 import { totalRows } from './meta.js'
@@ -186,12 +186,12 @@ export class Table<T extends Document = Document> {
           (tableId) => tableNames.get(tableId),
         )
         this.database.logger.info?.(
-          `[bitedb] adopted existing physical table "${this.name}" with ${meta.shards.length} shard(s)`,
+          `[larkbase] adopted existing physical table "${this.name}" with ${meta.shards.length} shard(s)`,
         )
       } else {
         const count = await this.physicalTableCount()
         if (count >= this.database.config.maxTablesPerBase) {
-          throw new BiteDBError(
+          throw new LarkbaseError(
             `Database "${this.database.name}" reached maxTablesPerBase=${this.database.config.maxTablesPerBase}. ` +
               'Bitable allows at most 100 tables per Base.',
           )
@@ -209,7 +209,7 @@ export class Table<T extends Document = Document> {
         }
         const shard = await this.createPhysicalTable(meta, 0)
         meta.shards.push(shard)
-        this.database.logger.info?.(`[bitedb] created table "${this.name}" (${shard.tableId})`)
+        this.database.logger.info?.(`[larkbase] created table "${this.name}" (${shard.tableId})`)
       }
       this.meta = meta
       const saved = await this.database.catalog.saveTable(meta)
@@ -227,14 +227,14 @@ export class Table<T extends Document = Document> {
         kind: 'text',
         feishuType: 1,
         primary: true,
-        description: 'bitedb document id',
+        description: 'larkbase document id',
       })
     }
     return meta
   }
 
   private requireMeta(): TableMeta {
-    if (!this.meta) throw new BiteDBError('Table is not initialised')
+    if (!this.meta) throw new LarkbaseError('Table is not initialised')
     return this.meta
   }
 
@@ -300,7 +300,7 @@ export class Table<T extends Document = Document> {
           changed = true
         } else {
           this.database.logger.warn?.(
-            `[bitedb] field "${field.key}" already exists as ${existing.kind}; keeping it instead of ${field.kind}`,
+            `[larkbase] field "${field.key}" already exists as ${existing.kind}; keeping it instead of ${field.kind}`,
           )
         }
       } else {
@@ -322,7 +322,7 @@ export class Table<T extends Document = Document> {
         kind: 'text',
         feishuType: 1,
         primary: true,
-        description: 'bitedb document id',
+        description: 'larkbase document id',
       })
       changed = true
     }
@@ -475,7 +475,7 @@ export class Table<T extends Document = Document> {
     const targetTable = this.database.table(field.target)
     const targetMeta = await targetTable.ensureBase()
     const targetShard = targetMeta.shards[0]
-    if (!targetShard) throw new BiteDBError(`Target table "${field.target}" has no physical shard`)
+    if (!targetShard) throw new LarkbaseError(`Target table "${field.target}" has no physical shard`)
 
     if (!field.backFieldName) {
       field.backFieldName = truncate(
@@ -721,7 +721,7 @@ export class Table<T extends Document = Document> {
         kind: 'text',
         feishuType: 1,
         primary: true,
-        description: 'bitedb document id',
+        description: 'larkbase document id',
       })
     }
     const shards: TableMeta['shards'] = []
@@ -799,7 +799,7 @@ export class Table<T extends Document = Document> {
   private async createShard(meta: TableMeta): Promise<TableMeta['shards'][number]> {
     const count = await this.physicalTableCount()
     if (count >= this.database.config.maxTablesPerBase) {
-      throw new BiteDBError(
+      throw new LarkbaseError(
         `Database "${this.database.name}" reached maxTablesPerBase=${this.database.config.maxTablesPerBase}. ` +
           'Bitable allows at most 100 tables per Base; split logical tables or raise the limit.',
       )
@@ -817,7 +817,7 @@ export class Table<T extends Document = Document> {
     const saved = await this.database.catalog.saveTable(meta)
     meta.recordId = saved.recordId
     this.database.logger.info?.(
-      `[bitedb] created shard ${index} for "${this.name}" (${shard.tableId})`,
+      `[larkbase] created shard ${index} for "${this.name}" (${shard.tableId})`,
     )
     return shard
   }
@@ -886,7 +886,7 @@ export class Table<T extends Document = Document> {
   // ---------------------------------------------------------------------------
 
   async insertOne(doc: T): Promise<WithId<T>> {
-    if (this.closed) throw new BiteDBError(`Table "${this.name}" is closed`)
+    if (this.closed) throw new LarkbaseError(`Table "${this.name}" is closed`)
     if (!doc || typeof doc !== 'object' || Array.isArray(doc) || doc instanceof Date || Buffer.isBuffer(doc)) {
       throw new ValidationError('insertOne expects a plain document object')
     }
@@ -933,7 +933,7 @@ export class Table<T extends Document = Document> {
   private async flushInserts(shardIndex: number, items: InsertItem[]): Promise<InsertResult[]> {
     const meta = this.requireMeta()
     const shard = meta.shards.find((candidate) => candidate.index === shardIndex)
-    if (!shard) throw new BiteDBError(`Shard ${shardIndex} not found in metadata`)
+    if (!shard) throw new LarkbaseError(`Shard ${shardIndex} not found in metadata`)
     try {
       const records = await this.database.client.batchCreateRecords(
         this.token!,
@@ -942,7 +942,7 @@ export class Table<T extends Document = Document> {
         randomUUID(),
       )
       if (records.length !== items.length) {
-        throw new BiteDBError(
+        throw new LarkbaseError(
           `Bitable batch_create returned ${records.length} records for ${items.length} inputs`,
         )
       }
@@ -1126,7 +1126,7 @@ export class Table<T extends Document = Document> {
     const hasMore = merged.length > need
     if (hasMore && options.limit === undefined) {
       this.database.logger.debug(
-        `[bitedb] query on "${this.name}" hit the default limit of ${limit} rows; ` +
+        `[larkbase] query on "${this.name}" hit the default limit of ${limit} rows; ` +
           'results were truncated. Pass limit() explicitly or use page() to detect more rows.',
       )
     }
@@ -1804,7 +1804,7 @@ export class Table<T extends Document = Document> {
           )
         } catch (err) {
           if (!isLastTableError(err)) {
-            this.database.logger.warn?.(`[bitedb] failed to delete physical tables for "${this.name}":`, err)
+            this.database.logger.warn?.(`[larkbase] failed to delete physical tables for "${this.name}":`, err)
           }
         }
       }

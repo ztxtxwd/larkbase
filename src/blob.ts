@@ -21,19 +21,28 @@ export interface SpillMarker {
   size: number
 }
 
-const SPILL_PREFIX = '{"$bitedb_blob":'
-const ENVELOPE_PREFIX = '{"$bitedb_json":'
-const BLOB_NAME_RE = /^bitedb\.v1\.(json|text|binary)\.([a-f0-9]{8,64})(?:\.[A-Za-z0-9._-]{1,40})?\.(json|txt|bin)$/
+const SPILL_PREFIX = '{"$larkbase_blob":'
+const ENVELOPE_PREFIX = '{"$larkbase_json":'
+// Databases written by bitedb <= 0.2 used the old brand in cell markers and
+// Drive file names. Keep reading those so upgrades do not orphan existing
+// blobs; all new writes use the Larkbase form.
+const LEGACY_SPILL_PREFIX = '{"$bitedb_blob":'
+const LEGACY_ENVELOPE_PREFIX = '{"$bitedb_json":'
+const BLOB_NAME_RE =
+  /^(?:larkbase|bitedb)\.v1\.(json|text|binary)\.([a-f0-9]{8,64})(?:\.[A-Za-z0-9._-]{1,40})?\.(json|txt|bin)$/
 
 export function isSpillMarkerString(value: unknown): value is string {
-  return typeof value === 'string' && value.startsWith(SPILL_PREFIX)
+  return (
+    typeof value === 'string' &&
+    (value.startsWith(SPILL_PREFIX) || value.startsWith(LEGACY_SPILL_PREFIX))
+  )
 }
 
 export function parseSpillMarker(value: unknown): SpillMarker | undefined {
   if (!isSpillMarkerString(value)) return undefined
   try {
     const parsed = JSON.parse(value)
-    const marker = parsed?.$bitedb_blob
+    const marker = parsed?.$larkbase_blob ?? parsed?.$bitedb_blob
     if (
       marker &&
       marker.v === 1 &&
@@ -63,9 +72,15 @@ export function makeJsonEnvelope(value: unknown): string {
 }
 
 export function parseJsonEnvelope(value: unknown): { found: boolean; value?: unknown } {
-  if (typeof value !== 'string' || !value.startsWith(ENVELOPE_PREFIX)) return { found: false }
+  if (typeof value !== 'string') return { found: false }
+  if (!value.startsWith(ENVELOPE_PREFIX) && !value.startsWith(LEGACY_ENVELOPE_PREFIX)) {
+    return { found: false }
+  }
   try {
     const parsed = JSON.parse(value)
+    if (parsed && Object.prototype.hasOwnProperty.call(parsed, '$larkbase_json')) {
+      return { found: true, value: parsed.$larkbase_json }
+    }
     if (parsed && Object.prototype.hasOwnProperty.call(parsed, '$bitedb_json')) {
       return { found: true, value: parsed.$bitedb_json }
     }
@@ -117,7 +132,7 @@ export class BlobRef {
 
   toJSON(): Record<string, unknown> {
     return {
-      $bitedb: 'blob',
+      $larkbase: 'blob',
       file_token: this.fileToken,
       name: this.name,
       size: this.size,
@@ -184,7 +199,7 @@ export class BlobManager {
       kind,
     }
     this.remember(this.uploadCache, cacheKey, result)
-    this.logger.debug?.(`[bitedb] uploaded ${kind} blob ${name} (${bytes.byteLength} bytes)`)
+    this.logger.debug?.(`[larkbase] uploaded ${kind} blob ${name} (${bytes.byteLength} bytes)`)
     return result
   }
 
@@ -245,7 +260,7 @@ export class BlobManager {
         try {
           return await this.client.downloadUrl(url)
         } catch (err) {
-          this.logger.debug?.(`[bitedb] signed media URL failed, falling back to file token:`, err)
+          this.logger.debug?.(`[larkbase] signed media URL failed, falling back to file token:`, err)
         }
       }
       return this.client.downloadMedia(fileToken)
@@ -377,6 +392,6 @@ function makeBlobFileName(kind: BlobKind, digest: string, hint?: string): string
       ? hint.replace(/[^A-Za-z0-9._-]/g, '_')
       : ''
   const middle = safeHint ? `${shortDigest}.${safeHint}` : shortDigest
-  return `bitedb.v1.${kind}.${middle}.${ext}`
+  return `larkbase.v1.${kind}.${middle}.${ext}`
 }
 

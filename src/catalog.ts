@@ -1,3 +1,9 @@
+import {
+  DEFAULT_CATALOG_NAME,
+  DEFAULT_DATABASE_PREFIX,
+  LEGACY_CATALOG_NAME,
+  LEGACY_DATABASE_PREFIX,
+} from './config.js'
 import { FeishuApiError, NotFoundError, ValidationError } from './errors.js'
 import type { FeishuClient } from './feishu.js'
 import type { Logger } from './logger.js'
@@ -81,7 +87,7 @@ export class Catalog {
     this.baseToken = await this.resolveCatalogBase()
     this.systemTables = await this.ensureSystemTables()
     await this.loadDatabaseIndex()
-    this.logger.debug?.(`[bitedb] catalog ready at ${this.baseToken}`)
+    this.logger.debug?.(`[larkbase] catalog ready at ${this.baseToken}`)
   }
 
   get catalogToken(): string | undefined {
@@ -89,29 +95,44 @@ export class Catalog {
   }
 
   private async resolveCatalogBase(): Promise<string> {
-    const explicit = this.options.catalogBaseToken ?? process.env.BITEDB_CATALOG_BASE_TOKEN
+    const explicit =
+      this.options.catalogBaseToken ??
+      process.env.LARKBASE_CATALOG_BASE_TOKEN ??
+      process.env.BITEDB_CATALOG_BASE_TOKEN
     if (explicit) return explicit
+
+    // bitedb <= 0.2 named the catalog `__bitedb_catalog__`. When the caller is
+    // on the default, adopt that Base instead of creating a second catalog —
+    // otherwise every existing database would become invisible.
+    const names = [this.options.catalogName]
+    if (this.options.catalogName === DEFAULT_CATALOG_NAME) names.push(LEGACY_CATALOG_NAME)
 
     const files = await this.client.listFiles(this.options.folderToken)
     const matches = files.filter((file) => {
       const type = file.type === 'shortcut' ? file.shortcut_info?.target_type : file.type
-      return type === 'bitable' && file.name === this.options.catalogName
+      return type === 'bitable' && names.includes(file.name)
     })
     if (matches.length > 1) {
       this.logger.warn?.(
-        `[bitedb] found ${matches.length} catalog Bases named "${this.options.catalogName}". Using the first; pin catalogBaseToken to avoid ambiguity.`,
+        `[larkbase] found ${matches.length} catalog Bases named ${names
+          .map((name) => `"${name}"`)
+          .join(' or ')}. Preferring "${this.options.catalogName}"; pin catalogBaseToken to avoid ambiguity.`,
       )
     }
-    if (matches[0]) {
+    const chosen = matches.find((file) => file.name === this.options.catalogName) ?? matches[0]
+    if (chosen) {
+      if (chosen.name !== this.options.catalogName) {
+        this.logger.info?.(
+          `[larkbase] adopting legacy catalog Base "${chosen.name}"; rename it to "${this.options.catalogName}" when convenient`,
+        )
+      }
       const token =
-        matches[0].type === 'shortcut'
-          ? matches[0].shortcut_info?.target_token
-          : matches[0].token
+        chosen.type === 'shortcut' ? chosen.shortcut_info?.target_token : chosen.token
       if (!token) throw new NotFoundError('Catalog shortcut has no target token')
       return token
     }
 
-    this.logger.info?.(`[bitedb] creating system catalog Base "${this.options.catalogName}"`)
+    this.logger.info?.(`[larkbase] creating system catalog Base "${this.options.catalogName}"`)
     const app = await this.client.createBase(this.options.catalogName, this.options.folderToken)
     return app.app_token
   }
@@ -237,19 +258,26 @@ export class Catalog {
       if (baseName.length > 255) {
         throw new ValidationError('Database Base name exceeds 255 characters; shorten the name or databasePrefix')
       }
+      // Adopt Bases created by bitedb <= 0.2 (`bitedb:<name>`) when using the
+      // default prefix, preferring the new name if both exist.
+      const baseNames = [baseName]
+      if (this.options.databasePrefix === DEFAULT_DATABASE_PREFIX) {
+        baseNames.push(`${LEGACY_DATABASE_PREFIX}${name}`)
+      }
       const files = await this.client.listFiles(this.options.folderToken)
-      const adopted = files.find((file) => {
+      const matches = files.filter((file) => {
         const type = file.type === 'shortcut' ? file.shortcut_info?.target_type : file.type
-        return type === 'bitable' && file.name === baseName
+        return type === 'bitable' && baseNames.includes(file.name)
       })
+      const adopted = matches.find((file) => file.name === baseName) ?? matches[0]
       let appToken: string | undefined
       let url: string | undefined
       if (adopted) {
         appToken =
           adopted.type === 'shortcut' ? adopted.shortcut_info?.target_token : adopted.token
-        this.logger.info?.(`[bitedb] adopting existing Base "${baseName}"`)
+        this.logger.info?.(`[larkbase] adopting existing Base "${adopted.name}"`)
       } else {
-        this.logger.info?.(`[bitedb] creating database Base "${baseName}"`)
+        this.logger.info?.(`[larkbase] creating database Base "${baseName}"`)
         const base = await this.client.createBase(baseName, this.options.folderToken)
         appToken = base.app_token
         url = base.url
@@ -362,7 +390,7 @@ export class Catalog {
       meta.shards ??= []
       return meta
     } catch (err) {
-      this.logger.error?.('[bitedb] failed to parse catalog table metadata:', err)
+      this.logger.error?.('[larkbase] failed to parse catalog table metadata:', err)
       return undefined
     }
   }
@@ -424,7 +452,7 @@ export class Catalog {
             const saved = await this.persistTable(meta)
             this.tableCache.set(key, saved)
           } catch (err) {
-            this.logger.warn?.('[bitedb] failed to persist table metadata:', err)
+            this.logger.warn?.('[larkbase] failed to persist table metadata:', err)
           }
         }
       })

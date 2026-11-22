@@ -1,10 +1,10 @@
-export { BiteDB, createClient } from './client.js'
+export { Larkbase, createClient } from './client.js'
 export { Database } from './database.js'
 export { Table } from './table.js'
 export { Query } from './query-builder.js'
 export { BlobRef } from './blob.js'
 export {
-  BiteDBError,
+  LarkbaseError,
   ConfigError,
   ValidationError,
   NotFoundError,
@@ -13,8 +13,8 @@ export {
 } from './errors.js'
 export type {
   AttachmentMetadata,
-  BiteDBConfig,
-  BiteDBLogger,
+  LarkbaseConfig,
+  LarkbaseLogger,
   DatabaseInfo,
   DeleteResult,
   Document,
