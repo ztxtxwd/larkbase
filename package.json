@@ -1,68 +1,24 @@
 {
-  "name": "larkbase",
-  "version": "0.3.0",
-  "description": "Larkbase: a headless, zero-provisioning serverless NoSQL database engine built on Feishu/Lark Bitable",
+  "name": "larkbase-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Larkbase monorepo: a headless serverless NoSQL engine on Feishu/Lark Bitable and its zero-infra vector search extension",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ztxtxwd/larkbase.git"
   },
-  "homepage": "https://github.com/ztxtxwd/larkbase#readme",
-  "bugs": {
-    "url": "https://github.com/ztxtxwd/larkbase/issues"
-  },
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
-  "sideEffects": false,
+  "packageManager": "pnpm@12.18.0",
   "engines": {
     "node": ">=18.17"
   },
   "scripts": {
-    "build": "tsup",
-    "test": "tsx --test test/*.test.ts",
-    "bench": "tsx bench/perf.ts",
-    "bench:mock": "tsx bench/perf.ts --mock --docs 300 --read-ops 15 --sequential 5",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
-  },
-  "keywords": [
-    "larkbase",
-    "feishu",
-    "lark",
-    "bitable",
-    "多维表格",
-    "database",
-    "nosql",
-    "serverless",
-    "sdk"
-  ],
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "tsup": "^8.3.5",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
-  },
-  "publishConfig": {
-    "access": "public"
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "bench": "pnpm --filter @larkbase/core bench",
+    "bench:mock": "pnpm --filter @larkbase/core bench:mock",
+    "bench:vector": "pnpm --filter @larkbase/vector bench"
   }
 }

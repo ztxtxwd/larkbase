@@ -2,7 +2,7 @@
  * Run with:
  *   FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx npx tsx examples/quickstart.ts
  */
-import { BlobRef, createClient } from 'larkbase'
+import { BlobRef, createClient } from '@larkbase/core'
 
 const db = createClient({
   appId: process.env.FEISHU_APP_ID!,

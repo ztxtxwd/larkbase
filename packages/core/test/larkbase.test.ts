@@ -353,6 +353,31 @@ test('updates, upserts by id, deletes and counts stay consistent', async () => {
   assert.equal(afterUnset!.status, undefined)
 })
 
+test('batchGet preserves order across shards and nulls missing ids', async () => {
+  const client = makeClient({ maxRowsPerShard: 2 })
+  const table = client
+    .useDatabase('batch_get')
+    .defineTable('items', { name: 'text', rank: 'number' })
+
+  const inserted = await table.insertMany([
+    { name: 'a', rank: 1 },
+    { name: 'b', rank: 2 },
+    { name: 'c', rank: 3 },
+    { name: 'd', rank: 4 },
+    { name: 'e', rank: 5 },
+  ])
+  const ids = inserted.map((doc) => doc._id)
+
+  const result = await table.batchGet([ids[3]!, 'missing-id', ids[0]!, ids[3]!])
+  assert.deepEqual(
+    result.map((doc) => (doc ? doc.name : null)),
+    ['d', null, 'a', 'd'],
+  )
+  assert.deepEqual(await table.batchGet([]), [])
+  await assert.rejects(table.batchGet([undefined as unknown as string]), /non-empty string ids/)
+  await assert.rejects(table.batchGet('not-an-array' as unknown as string[]), /array of ids/)
+})
+
 test('adopts an existing Base and physical tables when the catalog is lost', async () => {
   const first = makeClient()
   const sourceTable = first.useDatabase('recoverable').defineTable('orders', {

@@ -20,32 +20,36 @@ concurrency:
 
 jobs:
   publish:
-    name: Publish to npm
+    name: Publish workspace packages
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: npm
+          cache: pnpm
 
       # Trusted publishing requires npm >= 11.5.1.
       - name: Install latest npm
         run: npm install -g npm@11
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
-      - name: Verify release tag matches package.json
+      - name: Verify release tag matches @larkbase/core
         if: github.event_name == 'release'
         run: |
-          version="$(node -p "require('./package.json').version")"
+          version="$(node -p "require('./packages/core/package.json').version")"
           tag="${{ github.event.release.tag_name }}"
           tag="${tag#v}"
           if [ "$version" != "$tag" ]; then
-            echo "::error::Release tag '${{ github.event.release.tag_name }}' does not match package.json version '$version'."
+            echo "::error::Release tag '${{ github.event.release.tag_name }}' does not match @larkbase/core version '$version'."
             exit 1
           fi
 
@@ -56,30 +60,27 @@ jobs:
           exit 1
 
       - name: Typecheck
-        run: npm run typecheck
+        run: pnpm typecheck
 
       - name: Test
-        run: npm test
+        run: pnpm test
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
-      - name: Check whether the version is already on npm
-        id: exists
+      - name: Publish unpublished workspace packages
         run: |
-          name="$(node -p "require('./package.json').name")"
-          version="$(node -p "require('./package.json').version")"
-          if npm view "$name@$version" version >/dev/null 2>&1; then
-            echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::$name@$version is already published; skipping."
-          else
-            echo "published=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Publish (dry run)
-        if: steps.exists.outputs.published == 'false' && inputs['dry-run']
-        run: npm publish --dry-run --access public
-
-      - name: Publish
-        if: steps.exists.outputs.published == 'false' && !inputs['dry-run']
-        run: npm publish --provenance --access public
+          set -euo pipefail
+          for dir in packages/core packages/vector; do
+            name="$(node -p "require('./$dir/package.json').name")"
+            version="$(node -p "require('./$dir/package.json').version")"
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "::notice::$name@$version is already published; skipping."
+              continue
+            fi
+            if [ "${{ inputs['dry-run'] }}" = "true" ]; then
+              pnpm --filter "$name" publish --dry-run --access public --no-git-checks
+            else
+              pnpm --filter "$name" publish --provenance --access public --no-git-checks
+            fi
+          done

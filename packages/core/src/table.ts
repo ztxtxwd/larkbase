@@ -1024,6 +1024,74 @@ export class Table<T extends Document = Document> {
     return doc as WithId<T>
   }
 
+  /**
+   * Fetch many documents by logical `_id` with a bounded number of Bitable
+   * round trips. Results are returned in the same order as `ids`, and ids that
+   * do not exist yield `null`.
+   *
+   * The lookup is deliberately cold-start friendly: it issues one OR-filtered
+   * `records/search` per shard (per chunk of 100 ids) instead of one request
+   * per document, and warms the location cache as a side effect. Raw physical
+   * record ids (`rec...`) are not accepted here; use {@link get} for those.
+   */
+  async batchGet(ids: string[]): Promise<Array<WithId<T> | null>> {
+    if (!Array.isArray(ids)) throw new ValidationError('batchGet expects an array of ids')
+    if (ids.length === 0) return []
+    for (const id of ids) {
+      if (typeof id !== 'string' || id.length === 0) {
+        throw new ValidationError('batchGet expects non-empty string ids')
+      }
+    }
+
+    const meta = await this.ensure()
+    const unique = [...new Set(ids)]
+    const byId = new Map<string, WithId<T>>()
+    const idField = meta.fields.find((field) => field.key === '_id')
+
+    if (idField) {
+      // Feishu filters have no "isAnyOf"; Larkbase compiles `$in` into a single
+      // OR group. Chunking keeps filters comfortably below request-size limits.
+      const idBatchSize = 100
+      for (let offset = 0; offset < unique.length; offset += idBatchSize) {
+        const chunk = unique.slice(offset, offset + idBatchSize)
+        const compiled = compileFilter({ _id: { $in: chunk } }, meta)
+        if (compiled.impossible) continue
+
+        const perShard = await Promise.all(
+          meta.shards.map(async (shard) => {
+            const { items } = await this.database.client.searchAllRecords(
+              this.token!,
+              shard.tableId,
+              { filter: compiled.filter, automatic_fields: false },
+            )
+            return { shard, items }
+          }),
+        )
+
+        for (const { shard, items } of perShard) {
+          for (const item of items) {
+            const doc = (await decodeRecord(
+              item.fields,
+              meta,
+              this.codecContext(),
+              item.record_id,
+            )) as WithId<T>
+            const logicalId = typeof doc._id === 'string' && doc._id ? doc._id : undefined
+            if (!logicalId || byId.has(logicalId)) continue
+            this.rememberLocation({
+              shardIndex: shard.index,
+              recordId: item.record_id,
+              logicalId,
+            })
+            byId.set(logicalId, doc)
+          }
+        }
+      }
+    }
+
+    return ids.map((id) => byId.get(id) ?? null)
+  }
+
   async countDocuments(filter: Filter = {}): Promise<number> {
     const meta = await this.ensure()
     const compiled = compileFilter(await this.translateFilter(filter, meta), meta)
