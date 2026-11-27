@@ -1,0 +1,74 @@
+{
+  "name": "@larkbase/vector",
+  "version": "0.1.0",
+  "description": "Zero-infrastructure multimodal vector search for Larkbase: 1-bit sketches in memory, composite chunks in Feishu Bitable",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ztxtxwd/larkbase.git",
+    "directory": "packages/vector"
+  },
+  "homepage": "https://github.com/ztxtxwd/larkbase/tree/main/packages/vector#readme",
+  "bugs": {
+    "url": "https://github.com/ztxtxwd/larkbase/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "tsx --test test/*.test.ts",
+    "bench": "tsx bench/perf.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run typecheck && pnpm test && pnpm run build"
+  },
+  "keywords": [
+    "larkbase",
+    "feishu",
+    "lark",
+    "bitable",
+    "vector",
+    "vector-database",
+    "binary-quantization",
+    "hamming-distance",
+    "multimodal",
+    "rag",
+    "serverless"
+  ],
+  "peerDependencies": {
+    "@larkbase/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@larkbase/core": "workspace:*",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
