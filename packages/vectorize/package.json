@@ -1,0 +1,76 @@
+{
+  "name": "@larkflare/vectorize",
+  "version": "0.2.0",
+  "description": "Larkflare Vectorize: zero-infrastructure multimodal vector search over Feishu/Lark Bitable, with 1-bit sketches in memory",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ztxtxwd/larkflare.git",
+    "directory": "packages/vectorize"
+  },
+  "homepage": "https://github.com/ztxtxwd/larkflare/tree/main/packages/vectorize#readme",
+  "bugs": {
+    "url": "https://github.com/ztxtxwd/larkflare/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "tsx --test test/*.test.ts",
+    "bench": "tsx bench/perf.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run typecheck && pnpm test && pnpm run build"
+  },
+  "keywords": [
+    "larkflare",
+    "cloudflare",
+    "vectorize",
+    "feishu",
+    "lark",
+    "bitable",
+    "vector",
+    "vector-database",
+    "binary-quantization",
+    "hamming-distance",
+    "multimodal",
+    "rag",
+    "serverless"
+  ],
+  "peerDependencies": {
+    "@larkflare/db": "workspace:^"
+  },
+  "devDependencies": {
+    "@larkflare/db": "workspace:*",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

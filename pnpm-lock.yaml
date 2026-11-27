@@ -166,7 +166,25 @@ importers:
 
   .: {}
 
-  packages/core:
+  packages/d1:
+    devDependencies:
+      '@larkflare/db':
+        specifier: workspace:*
+        version: link:../db
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.5
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(tsx@4.23.15)(typescript@5.9.3)
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.15
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/db:
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
@@ -181,11 +199,29 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
-  packages/vector:
+  packages/r2:
     devDependencies:
-      '@larkbase/core':
+      '@larkflare/db':
         specifier: workspace:*
-        version: link:../core
+        version: link:../db
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.5
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(tsx@4.23.15)(typescript@5.9.3)
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.15
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/vectorize:
+    devDependencies:
+      '@larkflare/db':
+        specifier: workspace:*
+        version: link:../db
       '@types/node':
         specifier: ^22.10.2
         version: 22.20.5

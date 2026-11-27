@@ -1,12 +1,12 @@
 {
-  "name": "larkbase-monorepo",
+  "name": "larkflare-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Larkbase monorepo: a headless serverless NoSQL engine on Feishu/Lark Bitable and its zero-infra vector search extension",
+  "description": "Larkflare monorepo: Cloudflare-shaped serverless data products (D1, Vectorize, R2) built on Feishu/Lark Bitable and Drive",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ztxtxwd/larkbase.git"
+    "url": "git+https://github.com/ztxtxwd/larkflare.git"
   },
   "type": "module",
   "packageManager": "pnpm@12.18.0",
@@ -17,8 +17,8 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "bench": "pnpm --filter @larkbase/core bench",
-    "bench:mock": "pnpm --filter @larkbase/core bench:mock",
-    "bench:vector": "pnpm --filter @larkbase/vector bench"
+    "bench": "pnpm --filter @larkflare/db bench",
+    "bench:mock": "pnpm --filter @larkflare/db bench:mock",
+    "bench:vector": "pnpm --filter @larkflare/vectorize bench"
   }
 }

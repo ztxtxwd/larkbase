@@ -1,0 +1,71 @@
+{
+  "name": "@larkflare/d1",
+  "version": "0.1.0",
+  "description": "Larkflare D1: a relational SQL database over Feishu/Lark Bitable with a Cloudflare D1-style API",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ztxtxwd/larkflare.git",
+    "directory": "packages/d1"
+  },
+  "homepage": "https://github.com/ztxtxwd/larkflare/tree/main/packages/d1#readme",
+  "bugs": {
+    "url": "https://github.com/ztxtxwd/larkflare/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run typecheck && pnpm test && pnpm run build"
+  },
+  "keywords": [
+    "larkflare",
+    "cloudflare",
+    "d1",
+    "feishu",
+    "lark",
+    "bitable",
+    "sql",
+    "relational",
+    "serverless"
+  ],
+  "peerDependencies": {
+    "@larkflare/db": "workspace:^"
+  },
+  "devDependencies": {
+    "@larkflare/db": "workspace:*",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
