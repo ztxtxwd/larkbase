@@ -10,14 +10,16 @@
 | **D1** | [`@larkflare/d1`](./packages/d1) | Bitable 表（复用 DB） | 无服务器 **关系型** 数据库：SQL 建表、参数绑定、主键 / 类型约束、`prepare` / `bind` / `batch` |
 | **Vectorize** | [`@larkflare/vectorize`](./packages/vectorize) | Bitable 行 + 进程内存 | 零基建多模态向量检索：复合切片、1-bit 量化、内存汉明距离粗排、Bitable 回表 |
 | **R2** | [`@larkflare/r2`](./packages/r2) | Bitable 附件 + 飞书云盘 | S3 风格对象存储：桶、对象、前缀列表与 24 小时公开链接 |
+| **KV** | [`@larkflare/kv`](./packages/kv) | Bitable 行 + 飞书云盘（大值与二进制） | Workers KV 风格键值存储：命名空间、TTL、元数据、前缀 / 游标列表 |
 
-DB 是 NoSQL 文档引擎，不是关系型数据库；D1 是独立包，在 DB 之上提供 SQL 语义。Vectorize 与 R2 也复用 DB 的鉴权、建库建表、附件上传与分片能力。
+DB 是 NoSQL 文档引擎，不是关系型数据库；D1 与 KV 是独立包，D1 在 DB 之上提供 SQL 语义，KV 在 DB 之上提供 Workers KV 形状的键值语义。Vectorize、R2 与 KV 也复用 DB 的鉴权、建库建表、附件上传与分片能力。
 
 ```bash
 pnpm add @larkflare/db                        # NoSQL DB
 pnpm add @larkflare/d1 @larkflare/db          # D1（关系型）
 pnpm add @larkflare/vectorize @larkflare/db   # Vectorize
 pnpm add @larkflare/r2 @larkflare/db          # R2
+pnpm add @larkflare/kv @larkflare/db          # KV
 ```
 
 > Larkflare 不是 Cloudflare 或飞书官方产品，只是以 Cloudflare 的产品边界为参照，在飞书开放平台 API 之上做的一层实现。

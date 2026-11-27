@@ -71,7 +71,7 @@ jobs:
       - name: Publish unpublished workspace packages
         run: |
           set -euo pipefail
-          for dir in packages/db packages/d1 packages/vectorize packages/r2; do
+          for dir in packages/db packages/d1 packages/vectorize packages/r2 packages/kv; do
             name="$(node -p "require('./$dir/package.json').name")"
             version="$(node -p "require('./$dir/package.json').version")"
             if npm view "$name@$version" version >/dev/null 2>&1; then
