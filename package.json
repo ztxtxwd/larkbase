@@ -2,7 +2,7 @@
   "name": "larkflare-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Larkflare monorepo: Cloudflare-shaped serverless data products (D1, Vectorize, R2) built on Feishu/Lark Bitable and Drive",
+  "description": "Larkflare monorepo: Cloudflare-shaped serverless data products (D1, KV, Vectorize, R2) built on Feishu/Lark Bitable and Drive",
   "license": "MIT",
   "repository": {
     "type": "git",
