@@ -42,14 +42,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Verify release tag matches @larkbase/core
+      - name: Verify release tag matches @larkflare/db
         if: github.event_name == 'release'
         run: |
-          version="$(node -p "require('./packages/core/package.json').version")"
+          version="$(node -p "require('./packages/db/package.json').version")"
           tag="${{ github.event.release.tag_name }}"
           tag="${tag#v}"
           if [ "$version" != "$tag" ]; then
-            echo "::error::Release tag '${{ github.event.release.tag_name }}' does not match @larkbase/core version '$version'."
+            echo "::error::Release tag '${{ github.event.release.tag_name }}' does not match @larkflare/db version '$version'."
             exit 1
           fi
 
@@ -71,7 +71,7 @@ jobs:
       - name: Publish unpublished workspace packages
         run: |
           set -euo pipefail
-          for dir in packages/core packages/vector; do
+          for dir in packages/db packages/d1 packages/vectorize packages/r2; do
             name="$(node -p "require('./$dir/package.json').name")"
             version="$(node -p "require('./$dir/package.json').version")"
             if npm view "$name@$version" version >/dev/null 2>&1; then
